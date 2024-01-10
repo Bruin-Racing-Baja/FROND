@@ -1,4 +1,4 @@
-#include "IIRFilter.h"
+#include <iirfilter.h>
 #include <malloc.h>
 #include <stdint.h>
 

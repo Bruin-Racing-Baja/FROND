@@ -1,5 +1,5 @@
 #include <FlexCAN_T4.h>
-#include <OdriveCAN.h>
+#include <odrive.h>
 
 FlexCAN_T4<FLEXCAN_BUS_NUM, FLEXCAN_RX_SIZE, FLEXCAN_TX_SIZE> flexcan_bus;
 

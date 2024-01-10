@@ -1,5 +1,5 @@
-#include <Actuator.h>
-#include <Constants.h>
+#include <actuator.h>
+#include <constants.h>
 
 /**
  * Constructor for the Actuator

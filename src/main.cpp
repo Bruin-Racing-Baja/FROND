@@ -1,12 +1,12 @@
 /* GROND */
 
-#include <Actuator.h>
+#include <actuator.h>
 #include <Arduino.h>
-#include <Constants.h>
+#include <constants.h>
 #include <FlexCAN_T4.h>
 #include <HardwareSerial.h>
-#include <IIRFilter.h>
-#include <OdriveCAN.h>
+#include <iirfilter.h>
+#include <odrive.h>
 #include <SD.h>
 #include <SPI.h>
 #include <TimeLib.h>
@@ -25,7 +25,7 @@ static constexpr bool kSerialDebugging = 0;
 
 // Object Declarations
 ODrive odrive;
-Actuator actuator(&odrive);
+Actuator actuator(&odrive, ACTUATOR_AXIS);
 IntervalTimer timer;
 File log_file;
 IIRFilter engine_rpm_filter(ENGINE_RPM_FILTER_B, ENGINE_RPM_FILTER_A,

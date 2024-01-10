@@ -2,8 +2,8 @@
 #define actuator_h
 
 #include <Arduino.h>
-#include <Constants.h>
-#include <OdriveCAN.h>
+#include <constants.h>
+#include <odrive.h>
 
 class Actuator {
  public:
