@@ -1,13 +1,17 @@
-#ifndef odrive_can_h
-#define odrive_can_h
+#ifndef ODRIVE_H
+#define ODRIVE_H
 
 #include <Arduino.h>
 #include <FlexCAN_T4.h>
 
-#define COMMAND_SUCCESS 0
-#define COMMAND_ERROR_INVALID_AXIS 1
-#define COMMAND_ERROR_INVALID_COMMAND 2
-#define COMMAND_ERROR_WRITE_FAILED 3
+#define FLEXCAN_BUS_NUM CAN2
+#define FLEXCAN_RX_SIZE RX_SIZE_256
+#define FLEXCAN_TX_SIZE TX_SIZE_16
+
+#define ODRIVE_CMD_SUCCESS 0
+#define ODRIVE_CMD_ERROR_INVALID_AXIS 1
+#define ODRIVE_CMD_ERROR_INVALID_COMMAND 2
+#define ODRIVE_CMD_ERROR_WRITE_FAILED 3
 
 #define CAN_HEARTBEAT_MSG 0x1
 #define CAN_ESTOP_MSG 0x2
@@ -38,18 +42,19 @@
 #define CAN_SET_VEL_GAINS 0x1B
 #define CAN_GET_GPIO_STATES CAN_GET_IQ
 
-class OdriveCAN {
+/**
+ * @brief This class provides methods to communicate with an ODrive over the CAN bus. 
+ */
+class ODrive {
+  
  public:
-  OdriveCAN() {}
-  static FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> odrive_can;
+  ODrive() {}
 
   bool init(void (*parse)(const CAN_message_t& msg));
 
   void parse_message(const CAN_message_t& msg);
 
   // Requesters
-  int request_readout(int axis);
-
   int request_motor_error(int axis);
   int request_encoder_error(int axis);
   int request_sensorless_error(int axis);
@@ -60,8 +65,6 @@ class OdriveCAN {
   int request_gpio_states();
 
   // Getters
-  int get_readout(int axis, float report[19]);
-
   uint32_t get_time_since_heartbeat_ms();
   uint32_t get_axis_error(int axis);
   uint8_t get_axis_state(int axis);

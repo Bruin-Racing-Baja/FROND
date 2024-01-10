@@ -7,7 +7,7 @@
 
 class Actuator {
  public:
-  Actuator(OdriveCAN* odrive_in);
+  Actuator(ODrive* odrive);
   bool init();
   bool encoder_index_search();
   bool actuator_homing();
@@ -28,7 +28,7 @@ class Actuator {
   // Functions
   float set_speed(float set_speed, float brake_offset);
 
-  OdriveCAN* odrive;
+  ODrive* odrive;
 };
 
 #endif

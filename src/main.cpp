@@ -24,8 +24,8 @@ static constexpr int kHomeOnStartup = 1;  // Controls index search and home
 static constexpr bool kSerialDebugging = 0;
 
 // Object Declarations
-OdriveCAN odrive_can;
-Actuator actuator(&odrive_can);
+ODrive odrive;
+Actuator actuator(&odrive);
 IntervalTimer timer;
 File log_file;
 IIRFilter engine_rpm_filter(ENGINE_RPM_FILTER_B, ENGINE_RPM_FILTER_A,
@@ -38,8 +38,8 @@ IIRFilter brake_light_filter(BRAKE_LIGHT_FILTER_B, BRAKE_LIGHT_FILTER_A,
                              BRAKE_LIGHT_FILTER_M, BRAKE_LIGHT_FILTER_N);
 
 // CAN parsing interrupt function
-void odrive_can_parse(const CAN_message_t& msg) {
-  odrive_can.parse_message(msg);
+void odrive_parse(const CAN_message_t& msg) {
+  odrive.parse_message(msg);
 }
 
 // Control Function Variables
@@ -136,12 +136,12 @@ void control_function() {
 
   // Logging
   int can_error = 0;
-  can_error += !!odrive_can.request_vbus_voltage();
-  can_error += !!odrive_can.request_encoder_count(ACTUATOR_AXIS);
-  can_error += !!odrive_can.request_motor_error(ACTUATOR_AXIS);
-  can_error += !!odrive_can.request_encoder_count(ACTUATOR_AXIS);
-  can_error += !!odrive_can.request_iq(ACTUATOR_AXIS);
-  can_error += !!odrive_can.request_gpio_states();
+  can_error += !!odrive.request_vbus_voltage();
+  can_error += !!odrive.request_encoder_count(ACTUATOR_AXIS);
+  can_error += !!odrive.request_motor_error(ACTUATOR_AXIS);
+  can_error += !!odrive.request_encoder_count(ACTUATOR_AXIS);
+  can_error += !!odrive.request_iq(ACTUATOR_AXIS);
+  can_error += !!odrive.request_gpio_states();
 
   if (kSerialDebugging) {
     Serial.printf(
@@ -152,18 +152,18 @@ void control_function() {
         "%d, "
         "ax_err: %d, mtr_err: %d, enc_err: %d, filt_eg_rpm: %.2f, in: %d, "
         "out:%d\n",
-        millis(), odrive_can.get_voltage(), odrive_can.get_current(),
-        odrive_can.get_iq_setpoint(ACTUATOR_AXIS),
-        odrive_can.get_iq_measured(ACTUATOR_AXIS),
-        odrive_can.get_time_since_heartbeat_ms(),
-        odrive_can.get_shadow_count(ACTUATOR_AXIS), can_error,
+        millis(), odrive.get_voltage(), odrive.get_current(),
+        odrive.get_iq_setpoint(ACTUATOR_AXIS),
+        odrive.get_iq_measured(ACTUATOR_AXIS),
+        odrive.get_time_since_heartbeat_ms(),
+        odrive.get_shadow_count(ACTUATOR_AXIS), can_error,
         clamped_velocity_command, velocity_command, wl_rpm, eg_rpm,
         current_wl_count, current_eg_count,
-        odrive_can.get_axis_error(ACTUATOR_AXIS),
-        odrive_can.get_motor_error(ACTUATOR_AXIS),
-        odrive_can.get_encoder_error(ACTUATOR_AXIS), filt_eg_rpm,
-        odrive_can.get_gpio(ESTOP_IN_ODRIVE_PIN),
-        odrive_can.get_gpio(ESTOP_OUT_ODRIVE_PIN));
+        odrive.get_axis_error(ACTUATOR_AXIS),
+        odrive.get_motor_error(ACTUATOR_AXIS),
+        odrive.get_encoder_error(ACTUATOR_AXIS), filt_eg_rpm,
+        odrive.get_gpio(ESTOP_IN_ODRIVE_PIN),
+        odrive.get_gpio(ESTOP_OUT_ODRIVE_PIN));
   }
 
   log_message.control_cycle_count = cycle_count;
@@ -177,18 +177,18 @@ void control_function() {
   log_message.target_rpm = target_rpm;
   log_message.velocity_command = clamped_velocity_command;
   log_message.unclamped_velocity_command = velocity_command;
-  log_message.last_heartbeat_ms = odrive_can.get_time_since_heartbeat_ms();
-  log_message.axis_error = odrive_can.get_axis_error(ACTUATOR_AXIS);
-  log_message.motor_error = odrive_can.get_motor_error(ACTUATOR_AXIS);
-  log_message.encoder_error = odrive_can.get_encoder_error(ACTUATOR_AXIS);
-  log_message.voltage = odrive_can.get_voltage();
-  log_message.iq_measured = odrive_can.get_iq_measured(ACTUATOR_AXIS);
-  log_message.iq_setpoint = odrive_can.get_iq_setpoint(ACTUATOR_AXIS);
-  log_message.odrive_current = odrive_can.get_current();
-  log_message.inbound_estop = odrive_can.get_gpio(ESTOP_IN_ODRIVE_PIN);
-  log_message.outbound_estop = odrive_can.get_gpio(ESTOP_OUT_ODRIVE_PIN);
-  log_message.shadow_count = odrive_can.get_shadow_count(ACTUATOR_AXIS);
-  log_message.velocity_estimate = odrive_can.get_vel_estimate(ACTUATOR_AXIS);
+  log_message.last_heartbeat_ms = odrive.get_time_since_heartbeat_ms();
+  log_message.axis_error = odrive.get_axis_error(ACTUATOR_AXIS);
+  log_message.motor_error = odrive.get_motor_error(ACTUATOR_AXIS);
+  log_message.encoder_error = odrive.get_encoder_error(ACTUATOR_AXIS);
+  log_message.voltage = odrive.get_voltage();
+  log_message.iq_measured = odrive.get_iq_measured(ACTUATOR_AXIS);
+  log_message.iq_setpoint = odrive.get_iq_setpoint(ACTUATOR_AXIS);
+  log_message.odrive_current = odrive.get_current();
+  log_message.inbound_estop = odrive.get_gpio(ESTOP_IN_ODRIVE_PIN);
+  log_message.outbound_estop = odrive.get_gpio(ESTOP_OUT_ODRIVE_PIN);
+  log_message.shadow_count = odrive.get_shadow_count(ACTUATOR_AXIS);
+  log_message.velocity_estimate = odrive.get_vel_estimate(ACTUATOR_AXIS);
   log_message.filtered_secondary_rpm = filt_sd_rpm;
   log_message.filtered_engine_rpm = filt_eg_rpm;
   log_message.engine_rpm_error = error;
@@ -318,7 +318,7 @@ void setup() {
   }
 
   // Establish odrive connection
-  odrive_can.init(&odrive_can_parse);
+  odrive.init(&odrive_parse);
   actuator.init();
 
   // Home actuator
@@ -340,8 +340,8 @@ void setup() {
   last_sample_time_us = micros();
   switch (kMode) {
     case OPERATING_MODE:
-      odrive_can.set_input_vel(ACTUATOR_AXIS, 0, 0);
-      odrive_can.set_state(ACTUATOR_AXIS, ODRIVE_VELOCITY_CONTROL_STATE);
+      odrive.set_input_vel(ACTUATOR_AXIS, 0, 0);
+      odrive.set_state(ACTUATOR_AXIS, ODRIVE_VELOCITY_CONTROL_STATE);
       //timer.begin(control_function, CONTROL_FUNCTION_INTERVAL_US);
       break;
     case SERIAL_DEBUG_MODE:

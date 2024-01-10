@@ -1,15 +1,11 @@
 #include <Actuator.h>
 #include <Constants.h>
 
-// Startup functions
-
 /**
- * Constructor assigns odrive pointer as class member
- * @param odrive_in pointer to odrive CAN object
+ * Constructor for the Actuator
+ * @param odrive Pointer to odrive CAN object
  */
-Actuator::Actuator(OdriveCAN* odrive_in) {
-  odrive = odrive_in;
-}
+Actuator::Actuator(ODrive* odrive) :odrive(odrive){}
 
 /**
  * Initializes connection to physical odrive
