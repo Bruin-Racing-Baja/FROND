@@ -25,7 +25,7 @@ static constexpr bool kSerialDebugging = 0;
 
 // Object Declarations
 ODrive odrive;
-Actuator actuator(&odrive, ACTUATOR_AXIS);
+Actuator actuator(&odrive, ACTUATOR_AXIS, VEL_LIMIT);
 IntervalTimer timer;
 File log_file;
 IIRFilter engine_rpm_filter(ENGINE_RPM_FILTER_B, ENGINE_RPM_FILTER_A,
@@ -129,8 +129,9 @@ void control_function() {
   bool brake_pressed = filtered_brake_light_signal > BRAKE_BIAS_CUTOFF;
 
   float brake_bias = brake_pressed ? BRAKE_BIAS_VELOCITY : 0;
+  
   float clamped_velocity_command =
-      actuator.update_speed(velocity_command, brake_bias);
+      actuator.update_velocity(velocity_command, brake_bias);
 
   uint32_t stop_us = micros();
 

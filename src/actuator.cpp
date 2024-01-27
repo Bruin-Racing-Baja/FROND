@@ -2,83 +2,66 @@
 #include <constants.h>
 
 /**
- * Constructor for the Actuator
- * @param odrive Pointer to odrive CAN object
+ * Constructor for the actuator
+ * @param odrive Pointer to odrive object
+ * @param axis_num Axis number of actuator motor
  */
-Actuator::Actuator(ODrive* odrive) :odrive(odrive){}
+Actuator::Actuator(ODrive* odrive, int axis_num, float velocity_lim) :odrive(odrive), axis_num(axis_num), velocity_lim(velocity_lim){}
 
 /**
  * Initializes connection to physical odrive
- * @return bool if successful
+ * @return true if successful
  */
 bool Actuator::init() {
+  // TODO: Why do we have this ?
   // Due to CAN interrupt handler weirdness
-  commanded_axis_state = odrive->get_axis_state(ACTUATOR_AXIS);
+  commanded_axis_state = odrive->get_axis_state(axis_num);
   return 1;
 }
 
 /**
- * Instructs Odrive to attempt encoder homing
- * @return bool if successful
+ * Instructs odrive to attempt encoder homing
+ * @return true if successful
  */
 bool Actuator::encoder_index_search() {
   int state =
-      odrive->set_state(ACTUATOR_AXIS, ODRIVE_ENCODER_INDEX_SEARCH_STATE);
+      odrive->set_state(axis_num, ODRIVE_ENCODER_INDEX_SEARCH_STATE);
   commanded_axis_state = ODRIVE_ENCODER_INDEX_SEARCH_STATE;
-  delayMicroseconds(5 * 1000000);
-  if (state == 0)
-    return true;
-  else
-    return false;
+  delayMicroseconds(5e6);
+  return state == 0;
 }
 
-// Speed functions
-
 /**
- * If the targeted actuator speed is different than the current speed set it to the updated speed
- * @param target_speed the speed to updtate to
- * @return the current set speed of the actuator
+ * If the targeted actuator velocity is different than the current velocity, set it to the updated velocity
+ * @param velocity The velocity to update to
+ * @return The current set velocity of the actuator
  */
-float Actuator::update_speed(float target_speed, float brake_offset) {
+float Actuator::update_velocity(float velocity, float brake_offset) {
   if (commanded_axis_state == ODRIVE_VELOCITY_CONTROL_STATE &&
-      target_speed == current_speed) {
-    return target_speed;
+      velocity == cur_velocity) {
+    return velocity;
   }
-  return Actuator::set_speed(target_speed, brake_offset);
+  return Actuator::set_velocity(velocity, brake_offset);
 }
 
 /**
- * Instructs the ODrive object to set given speed
- * @param set_speed the speed to set
- * @return the speed that is set
+ * Instructs the odrive object to set given velocity
+ * @param velocity The velocity to set
+ * @return The velocity that is actually set
  */
-float Actuator::set_speed(float set_speed, float brake_offset) {
-  set_speed = constrain(set_speed, -VEL_LIMIT, VEL_LIMIT);
-  set_speed += brake_offset;
-  int can_error =
-      odrive->set_state(ACTUATOR_AXIS, ODRIVE_VELOCITY_CONTROL_STATE);
-  commanded_axis_state = ODRIVE_VELOCITY_CONTROL_STATE;
-  can_error =
-      (can_error << 1) | odrive->set_input_vel(ACTUATOR_AXIS, set_speed, 0);
-  if (can_error != 0) {
-    Serial.printf("Error Setting Speed (CAN Error %d)\n", can_error);
+float Actuator::set_velocity(float velocity, float brake_offset) {
+  // TODO: Return on error (and reset variables). Properly implement brake offset.
+  if(odrive->set_state(axis_num, ODRIVE_VELOCITY_CONTROL_STATE) != 0){
+    Serial.printf("Error setting ODrive to velocity control state (CAN Error)\n");
   }
-  current_speed = set_speed;
-  return current_speed;
-}
+  commanded_axis_state = ODRIVE_VELOCITY_CONTROL_STATE;
 
-// Readout Functions
-/**
- * Provides a readout passed through float array
- * @param readout[5] array to be filled with readout
- * @return 0 as all are member variables
-*/
-int Actuator::get_readout(float readout[5]) {
-  readout[0] = commanded_axis_state;
-  readout[1] = commanded_axis_velocity;
-  readout[2] = actuator_error;
-  readout[3] = homing_error;
-  readout[4] = homing_timer;
+  float target_velocity = constrain(velocity, -velocity_lim, velocity_lim);
+  target_velocity += brake_offset;
+  if (odrive->set_input_vel(axis_num, target_velocity, 0) != 0) {
+    Serial.printf("Error setting ODrive velocity (CAN Error)\n");
+  }
 
-  return 0;
+  cur_velocity = target_velocity;
+  return cur_velocity;
 }
